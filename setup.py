@@ -1,11 +1,11 @@
 from setuptools import setup
 
-setup(name='actionstacks',
+setup(name='actionqueues',
       version='0.1',
       description='Framework for executing actions and rollbacks',
-      url='http://github.com/mikerhodes/actionstacks',
+      url='http://github.com/mikerhodes/actionqueues',
       author='Mike Rhodes',
       author_email='mike.rhodes@dx13.co.uk',
       license='Apache 2.0',
-      packages=['actionstacks'],
+      packages=['actionqueues'],
       zip_safe=False)
