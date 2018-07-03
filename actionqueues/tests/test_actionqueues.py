@@ -104,7 +104,9 @@ def test_explode_action():
     q.rollback()
 
     assert actions[0]._rollback_called
+    assert actions[0]._rollback_value == 2
     assert actions[1]._rollback_called
+    assert actions[1]._rollback_value == 1
     assert actions[2]._rollback_called
     assert not actions[3]._rollback_called
 
