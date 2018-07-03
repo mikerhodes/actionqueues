@@ -11,7 +11,7 @@ pip install actionqueues
 
 (later anyway)
 
-## Using Action Queues
+## Using Action Queues
 
 It's barebones, the main point is to provide a framework to work within for
 actions that have side effects. It's basically the Command pattern, with a
@@ -44,7 +44,7 @@ class MyAction(action.Action):
 
     def rollback(self):
         """Called in reverse order for all actions queued whose execute
-        method was called.
+        method was called when the ActionQueue's rollback method is called.
         """
         if self._value = 1:
             self._value = 0
