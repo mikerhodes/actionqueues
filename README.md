@@ -1,7 +1,17 @@
 # Action Queues
 
 `actionqueues` is a lightweight way to queue up commands for execution and
-rollback on failures.
+rollback on failures. The idea is that it provides a framework for safely
+executing sequences of action with side-effects, like database writes, that
+might need later rolling back if later actions fail. In addition, it provides
+a standardised way for actions to be retried.
+
+For example, a user sign up process may write to several different systems.
+If one system is down, then the other systems modified so far need cleaning
+up before the failure is propagated back to the user. Using `actionqueues`
+with an action for each external system to be modified enables this pattern,
+along with simple retry semantics for likely-transient failures such as network
+blips.
 
 ## Installing
 
