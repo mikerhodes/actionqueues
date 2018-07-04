@@ -22,7 +22,8 @@ to an `ActionQueue`. Call `ActionQueue#execute` to run the actions in the order
 added to the `ActionQueue`. If an `Action` raises an exception, this is propagated
 back up to the caller. Catch it and call `ActionQueue#rollback` to call rollback
 on the `Actions` that have been executed, including the one that raised the
-exception.
+exception. Rollback will not be called on actions where `execute` has not been
+called.
 
 If the `execute` method of an action encounters a problem that may be fixed
 by retrying, it should raise a `actionqueue.RetryActionException`, which
