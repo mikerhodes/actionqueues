@@ -23,19 +23,25 @@ class ActionQueue(object):
         """
         for action in self._actions:
             self._executed_actions.append(action)
-
-            # Run action until either it succeeds or throws an exception
-            # that's not an ActionRetryException
-            retry = True
-            while retry:
-                retry = False
-                try:
-                    action.execute()
-                except ActionRetryException, ex:  # other exceptions should bubble out
-                    retry = True
-                    time.sleep(ex.ms_backoff / 1000.0)
-
+            self.execute_with_retries(action, lambda a: a.execute())
 
     def rollback(self):
         for action in reversed(self._executed_actions):
             action.rollback()
+
+    def execute_with_retries(self, action, f):
+        """Execute function f with single argument action. Retry if
+        ActionRetryException is raised.
+        """
+        # Run action until either it succeeds or throws an exception
+        # that's not an ActionRetryException
+        retry = True
+        while retry:
+            retry = False
+            try:
+                f(action)
+            except ActionRetryException, ex:  # other exceptions should bubble out
+                retry = True
+                time.sleep(ex.ms_backoff / 1000.0)
+
+
