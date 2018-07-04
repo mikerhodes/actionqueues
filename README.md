@@ -42,7 +42,8 @@ FAIL = 2
 
 class MyAction(action.Action):
 
-    def __init__(self):
+    def __init__(self, id):
+        self._id = id
         self._value = 0
 
     def execute(self):
@@ -50,27 +51,81 @@ class MyAction(action.Action):
 
         Raise any exception to indicate failure.
         """
-        self._value = 1
         action = random.choice([SUCCEED, RETRY, FAIL])
         if action == RETRY:
-            raise actionqueue.RetryActionException(ms_backoff=0)
+            print self._id, "Throwing retry exception"
+            raise actionqueue.ActionRetryException(ms_backoff=0)
         elif action == FAIL:
+            print self._id, "Throwing failure exception"
             raise Exception()
-        # otherwise succeed
+        else:
+            print self._id, "Executing success action"
+            self._value = 1
+
 
     def rollback(self):
         """Called in reverse order for all actions queued whose execute
         method was called when the ActionQueue's rollback method is called.
         """
-        if self._value = 1:
+        print self._id, "Rolling back action"
+        if self._value == 1:
             self._value = 0
 
 q = actionqueue.ActionQueue()
-q.add(MyAction())
-q.add(MyAction())
+q.add(MyAction("a"))
+q.add(MyAction("b"))
 
 try:
     q.execute()
 except:
     q.rollback()
+```
+
+## Retry exception helpers
+
+It can be tedious to keep track of the backoff and retry count for an action.
+Therefore `actionqueues` provides helpers for this called exception factories.
+These are created when the `Action` is initialised, and when an `execute`
+method hits a retriable exception, it calls the factory's `raise_exception()`
+method. In general, this will throw `ActionRetryException` exceptions for a
+given number of retries, then throw a generic exception, or one provided by
+the `Action` object.
+
+The available exception factories are:
+
+- `DoublingBackoffExceptionFactory` which will throw a configurable number
+    `ActionRetryException` exceptions, each doubling its backoff time.
+
+In this example, the `ZeroDivisionError` will cause 5 retries, at 100, 200,
+400, 800 and 1600ms delays:
+
+```python
+from actionqueues import actionqueue, action
+from actionqueues.exceptionfactory import DoublingBackoffExceptionFactory
+
+class MyFailingAction(action.Action):
+
+    def __init__(self):
+        self._run = 1
+        self._ex_factory = DoublingBackoffExceptionFactory(
+            retries=5,
+            ms_backoff_initial=100
+        )
+
+    def execute(self):
+        """Execute an always failing action, but have it retried 5 times."""
+        print "Executing action", self._run
+        self._run += 1
+        try:
+            1 / 0
+        except ZeroDivisionError, ex:
+            self._ex_factory.raise_exception(original_exception=ex)
+
+q = actionqueue.ActionQueue()
+q.add(MyFailingAction())
+
+try:
+    q.execute()
+except:
+    print "boom"
 ```
