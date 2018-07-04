@@ -1,47 +1,5 @@
-import pytest
-
 from actionqueues import actionqueue
-from actionqueues import action
-
-class MockCommand(action.Action):
-
-    def __init__(self, execute_state, rollback_state):
-        self._execute_called = False
-        self._rollback_called = False
-        self._execute_state = execute_state
-        self._rollback_state = rollback_state
-
-    def execute(self):
-        self._execute_called = True
-        self._execute_value = self._execute_state.inc()
-
-    def rollback(self):
-        self._rollback_called = True
-        self._rollback_value = self._rollback_state.inc()
-
-class ExplodingCommand(action.Action):
-
-    def __init__(self):
-        self._execute_called = False
-        self._rollback_called = False
-
-    def execute(self):
-        self._execute_called = True
-        raise IOError()
-
-    def rollback(self):
-        self._rollback_called = True
-
-class State(object):
-    """The state object maintains a simple counter that allows
-    us to check Actions are executed in order."""
-
-    def __init__(self):
-        self._counter = 0
-
-    def inc(self):
-        self._counter += 1
-        return self._counter
+from .mock_actions import *
 
 def test_execute_actions():
     exec_state = State()

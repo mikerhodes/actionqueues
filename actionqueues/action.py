@@ -5,6 +5,8 @@ class Action(object):
         """Execute this action.
 
         Save state on the object to allow for rollback of side-effects.
+
+        Throw a ActionRetryException if a failure should be retried later.
         """
         pass
 

@@ -24,9 +24,20 @@ back up to the caller. Catch it and call `ActionQueue#rollback` to call rollback
 on the `Actions` that have been executed, including the one that raised the
 exception.
 
+If the `execute` method of an action encounters a problem that may be fixed
+by retrying, it should raise a `actionqueue.RetryActionException`, which
+takes an optional `ms_backoff` argument to specify a time to sleep. The
+`ActionQueue` will retry as long as the action keeps raising
+`actionqueue.RetryActionException`, so the action must maintain a retry count
+to avoid endless retries.
+
 ```python
 import random
 from actionqueues import actionqueue, action
+
+SUCCEED = 0
+RETRY = 1
+FAIL = 2
 
 class MyAction(action.Action):
 
@@ -39,8 +50,12 @@ class MyAction(action.Action):
         Raise any exception to indicate failure.
         """
         self._value = 1
-        if random.choice([True, False]):
+        action = random.choice([SUCCEED, RETRY, FAIL])
+        if action == RETRY:
+            raise actionqueue.RetryActionException(ms_backoff=0)
+        elif action == FAIL:
             raise Exception()
+        # otherwise succeed
 
     def rollback(self):
         """Called in reverse order for all actions queued whose execute

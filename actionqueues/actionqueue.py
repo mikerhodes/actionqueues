@@ -1,3 +1,10 @@
+import time
+
+class ActionRetryException(Exception):
+    """Exception thrown by actions when they should be retried."""
+    def __init__(self, ms_backoff=0):
+        """Initialise with a backoff time."""
+        self.ms_backoff = ms_backoff
 
 class ActionQueue(object):
     """Queue of Action objects ready for execution."""
@@ -16,7 +23,18 @@ class ActionQueue(object):
         """
         for action in self._actions:
             self._executed_actions.append(action)
-            action.execute()
+
+            # Run action until either it succeeds or throws an exception
+            # that's not an ActionRetryException
+            retry = True
+            while retry:
+                retry = False
+                try:
+                    action.execute()
+                except ActionRetryException, ex:  # other exceptions should bubble out
+                    retry = True
+                    time.sleep(ex.ms_backoff / 1000.0)
+
 
     def rollback(self):
         for action in reversed(self._executed_actions):
