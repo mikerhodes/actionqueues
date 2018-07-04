@@ -56,6 +56,32 @@ class RetryCommand(action.Action):
         if self._failures >= 0:
             raise actionqueue.ActionRetryException(self._delay_ms)
 
+
+
+class RetryOnRollbackCommand(action.Action):
+    """Command that fails with retry exception a certain number of times,
+    then succeeds.
+    """
+
+    def __init__(self, execute_state, rollback_state, failures, delay_ms=0):
+        self._failures = failures
+        self._delay_ms = delay_ms
+        self._execute_called = False
+        self._execute_state = execute_state
+        self._rollback_called = False
+        self._rollback_state = rollback_state
+
+    def execute(self):
+        self._execute_called = True
+        self._execute_value = self._execute_state.inc()
+
+    def rollback(self):
+        self._rollback_called = True
+        self._rollback_value = self._rollback_state.inc()
+        self._failures -= 1
+        if self._failures >= 0:
+            raise actionqueue.ActionRetryException(self._delay_ms)
+
 class RetryThenExplodeCommand(action.Action):
     """Command that fails with retry exception a certain number of times,
     then fails with a non-retry exception.

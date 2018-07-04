@@ -27,7 +27,10 @@ class ActionQueue(object):
 
     def rollback(self):
         for action in reversed(self._executed_actions):
-            action.rollback()
+            try:
+                self.execute_with_retries(action, lambda a: a.rollback())
+            except:
+                pass  # on exception, carry on with rollback of other steps
 
     def execute_with_retries(self, action, f):
         """Execute function f with single argument action. Retry if

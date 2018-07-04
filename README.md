@@ -31,18 +31,52 @@ tiny execution framework.
 
 An `ActionQueue` holds `Actions` for execution and rollback. Add `Action` objects
 to an `ActionQueue`. Call `ActionQueue#execute` to run the actions in the order
-added to the `ActionQueue`. If an `Action` raises an exception, this is propagated
-back up to the caller. Catch it and call `ActionQueue#rollback` to call rollback
-on the `Actions` that have been executed, including the one that raised the
-exception. Rollback will not be called on actions where `execute` has not been
-called.
+added to the `ActionQueue`. Behaviour after this point is controlled using
+`Exception` objects raised during calls to either `execute` or `rollback`.
 
-If the `execute` method of an action encounters a problem that may be fixed
-by retrying, it should raise a `actionqueue.RetryActionException`, which
-takes an optional `ms_backoff` argument to specify a time to sleep. The
-`ActionQueue` will retry as long as the action keeps raising
-`actionqueue.RetryActionException`, so the action must maintain a retry count
+The default case is that no exception is raised, and the next action in the
+queue is executed or rolled back.
+
+## Exceptions during `execute`
+
+If an `Action#execute` raises an exception, the ActionQueue notes where it's
+up to in the Actions queued up and then propagates the exception
+back up to the caller.
+
+It is the caller's responsibility to catch the exception and then to call
+`ActionQueue#rollback`. This is so the caller can know that the queue of
+actions failed and is able to log the exception (and possibly not call
+`rollback` at all).
+
+Calling `ActionQueue#rollback` will execute the `rollback` method on all
+actions where the `execute` method was called, including the one raising the
+exception, in the reverse order to that which the `execute` method was called.
+
+Rollback will not be called on actions where `execute` has not been called.
+
+## Exceptions during `rollback`
+
+If an exception is raised during the `rollback` method, the `ActionQueue` will
+silently swallow the exception and continue executing the `rollback` methods
+of earlier `Action` objects in the queue.
+
+This is because, in the rollback scenario, it's most likely that all rollback
+actions should happen so the library assumes this. Therefore `rollback` methods
+should do their own logging of exceptions before re-raising them.
+
+## Retrying failed operations
+
+There is an exception to the above rules. If the `execute` or `rollback` method
+raises a `actionqueue.ActionRetryException` then the `execute` or `rollback`
+method will be called again. The `ActionRetryException` init method takes an
+optional `ms_backoff` argument to specify a time to sleep before trying the
+method again, in milliseconds.
+
+The `ActionQueue` will retry as long as the action keeps raising
+`ActionRetryException`, so the action must maintain a retry count
 to avoid endless retries.
+
+## Example
 
 ```python
 import random
