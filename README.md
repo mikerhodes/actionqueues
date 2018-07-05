@@ -27,28 +27,38 @@ It's barebones, the main point is to provide a framework to work within for
 actions that have side effects. It's basically the Command pattern, with a
 tiny execution framework.
 
-An `ActionQueue` holds `Actions` for execution and rollback. Add `Action` objects
-to an `ActionQueue`. Call `ActionQueue#execute` to run the actions in the order
-added to the `ActionQueue`. Behaviour after this point is controlled using
-`Exception` objects raised during calls to either `execute` or `rollback`.
+An `Action` is the lowest-level building block. It's any object with `execute`
+and `rollback` methods. The `Action` is what handles executing each step of the
+overall workflow, and rolling back any changes made to external state. It's
+a single object so it can save state for rollback -- for example, primary
+keys for any created database rows so they can be deleted during rollback.
+
+The main task of a user of `actionqueues` is to create the `Action` classes
+which implement the tasks their workflows require.
+
+Once `Action` classes are written, they can be executed. An `ActionQueue` holds `Actions` for execution and rollback. Add `Action` objects to an `ActionQueue`
+for execution. Call `ActionQueue#execute` to start running each action's
+`execute` method in the order the `Action` objects were added to the
+`ActionQueue`. Behaviour after this point is controlled by the `execute` and
+`rollback` methods on the `Action` objects being executed by the queue.
 
 ### Normal operation
 
 The default case is that no exception is raised during an `execute` and the
-next action in the queue is executed.
+next action in the queue is has `execute` called. This is shown below for a
+sequence of `Action` objects within an `ActionQueue`.
 
-![Happy path](./images/happy-path.png)
+![Happy path](https://raw.githubusercontent.com/mikerhodes/actionqueues/master/images/happy-path.png)
 
-### Exceptions during `execute`
+### Exceptions during `execute` cause rollback
 
 If an `Action#execute` raises an exception, the ActionQueue notes where it's
 up to in the Actions queued up and then propagates the exception
 back up to the caller.
 
-It is the caller's responsibility to catch the exception and then to call
+It is then the caller's responsibility to catch the exception and then to call
 `ActionQueue#rollback`. This is so the caller can know that the queue of
-actions failed and is able to log the exception (and possibly not call
-`rollback` at all).
+actions failed and is able to log the exception before calling `rollback`.
 
 Calling `ActionQueue#rollback` will execute the `rollback` method on all
 actions where the `execute` method was called, including the one raising the
@@ -59,7 +69,7 @@ Rollback will not be called on actions where `execute` has not been called.
 Again, the default case at this point is that `rollback` methods succeed and
 don't throw exceptions, leading to each being executed in succession.
 
-![Rollback](./images/rollback.png)
+![Rollback](https://raw.githubusercontent.com/mikerhodes/actionqueues/master/images/rollback.png)
 
 ### Exceptions during `rollback`
 
@@ -72,7 +82,7 @@ This is because, in the rollback scenario, it's most likely that all rollback
 actions should happen so the library assumes this. Therefore `rollback` methods
 should do their own logging of exceptions before re-raising them.
 
-![Rollback exceptions](./images/rollback-exception.png)
+![Rollback exceptions](https://raw.githubusercontent.com/mikerhodes/actionqueues/master/images/rollback-exception.png)
 
 ### Retrying failed operations
 
@@ -148,13 +158,16 @@ method. In general, this will throw `ActionRetryException` exceptions for a
 given number of retries, then throw a generic exception, or one provided by
 the `Action` object.
 
+Using separate ExceptionFactory objects for `execute` and `rollback` is usually
+required.
+
 The available exception factories are:
 
 - `DoublingBackoffExceptionFactory` which will throw a configurable number
     `ActionRetryException` exceptions, each doubling its backoff time.
 
 In this example, the `ZeroDivisionError` will cause 5 retries, at 100, 200,
-400, 800 and 1600ms delays:
+400, 800 and 1600ms delays, by using a `DoublingBackoffExceptionFactory`:
 
 ```python
 from actionqueues import actionqueue, action
@@ -164,8 +177,12 @@ class MyFailingAction(action.Action):
 
     def __init__(self):
         self._run = 1
-        self._ex_factory = DoublingBackoffExceptionFactory(
+        self._execute_ex_factory = DoublingBackoffExceptionFactory(
             retries=5,
+            ms_backoff_initial=100
+        )
+        self._rollback_ex_factory = DoublingBackoffExceptionFactory(
+            retries=10,
             ms_backoff_initial=100
         )
 
@@ -176,7 +193,15 @@ class MyFailingAction(action.Action):
         try:
             1 / 0
         except ZeroDivisionError, ex:
-            self._ex_factory.raise_exception(original_exception=ex)
+            self._execute_ex_factory.raise_exception(original_exception=ex)
+
+    def rollback(self):
+        print "Rollback action", self._run
+        self._run += 1
+        try:
+            1 / 0
+        except ZeroDivisionError, ex:
+            self._rollback_ex_factory.raise_exception(original_exception=ex)
 
 q = actionqueue.ActionQueue()
 q.add(MyFailingAction())
