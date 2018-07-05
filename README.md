@@ -21,8 +21,6 @@ blips.
 pip install actionqueues
 ```
 
-(Later anyway, still need to figure pypi management!)
-
 ## Using Action Queues
 
 It's barebones, the main point is to provide a framework to work within for
