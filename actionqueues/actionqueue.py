@@ -1,5 +1,7 @@
 import time
 
+from aqstatemachine import AQStateMachine
+
 class ActionRetryException(Exception):
     """Exception thrown by actions when they should be retried."""
     def __init__(self, ms_backoff=0):
@@ -12,8 +14,10 @@ class ActionQueue(object):
     def __init__(self):
         self._actions = list()
         self._executed_actions = list()
+        self._state_machine = AQStateMachine()
 
     def add(self, action):
+        self._state_machine.transition_to_add()
         self._actions.append(action)
 
     def execute(self):
@@ -21,16 +25,20 @@ class ActionQueue(object):
 
         Catch the ExecutionException and call rollback() to rollback.
         """
+        self._state_machine.transition_to_execute()
         for action in self._actions:
             self._executed_actions.append(action)
             self.execute_with_retries(action, lambda a: a.execute())
+        self._state_machine.transition_to_execute_complete()
 
     def rollback(self):
+        self._state_machine.transition_to_rollback()
         for action in reversed(self._executed_actions):
             try:
                 self.execute_with_retries(action, lambda a: a.rollback())
             except:
                 pass  # on exception, carry on with rollback of other steps
+        self._state_machine.transition_to_rollback_complete()
 
     def execute_with_retries(self, action, f):
         """Execute function f with single argument action. Retry if
