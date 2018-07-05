@@ -34,10 +34,14 @@ to an `ActionQueue`. Call `ActionQueue#execute` to run the actions in the order
 added to the `ActionQueue`. Behaviour after this point is controlled using
 `Exception` objects raised during calls to either `execute` or `rollback`.
 
-The default case is that no exception is raised, and the next action in the
-queue is executed or rolled back.
+### Normal operation
 
-## Exceptions during `execute`
+The default case is that no exception is raised during an `execute` and the
+next action in the queue is executed.
+
+![Happy path](./images/happy-path.png)
+
+### Exceptions during `execute`
 
 If an `Action#execute` raises an exception, the ActionQueue notes where it's
 up to in the Actions queued up and then propagates the exception
@@ -54,9 +58,15 @@ exception, in the reverse order to that which the `execute` method was called.
 
 Rollback will not be called on actions where `execute` has not been called.
 
-## Exceptions during `rollback`
+Again, the default case at this point is that `rollback` methods succeed and
+don't throw exceptions, leading to each being executed in succession.
 
-If an exception is raised during the `rollback` method, the `ActionQueue` will
+![Rollback](./images/rollback.png)
+
+### Exceptions during `rollback`
+
+In contrast to a raised exception from `execute`, if an exception is raised
+during the `rollback` method, the `ActionQueue` will
 silently swallow the exception and continue executing the `rollback` methods
 of earlier `Action` objects in the queue.
 
@@ -64,7 +74,9 @@ This is because, in the rollback scenario, it's most likely that all rollback
 actions should happen so the library assumes this. Therefore `rollback` methods
 should do their own logging of exceptions before re-raising them.
 
-## Retrying failed operations
+![Rollback exceptions](./images/rollback-exception.png)
+
+### Retrying failed operations
 
 There is an exception to the above rules. If the `execute` or `rollback` method
 raises a `actionqueue.ActionRetryException` then the `execute` or `rollback`
