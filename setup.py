@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='actionqueues',
-      version='0.1',
+      version='0.7',
       description='Framework for executing actions and rollbacks',
       url='http://github.com/mikerhodes/actionqueues',
       author='Mike Rhodes',
