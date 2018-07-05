@@ -86,7 +86,8 @@ method again, in milliseconds.
 
 The `ActionQueue` will retry as long as the action keeps raising
 `ActionRetryException`, so the action must maintain a retry count
-to avoid endless retries.
+to avoid endless retries. See [below](#retry-exception-helpers) for some
+helper classes which cover common cases.
 
 ## Example
 
