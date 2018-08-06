@@ -51,7 +51,7 @@ class ActionQueue(object):
             retry = False
             try:
                 f(action)
-            except ActionRetryException, ex:  # other exceptions should bubble out
+            except ActionRetryException as ex:  # other exceptions should bubble out
                 retry = True
                 time.sleep(ex.ms_backoff / 1000.0)
 
