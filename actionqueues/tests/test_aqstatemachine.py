@@ -1,3 +1,5 @@
+# pylint: disable=invalid-name,missing-docstring
+
 import pytest
 
 from actionqueues.aqstatemachine import AQStateMachine
@@ -79,4 +81,3 @@ def test_invalid_sequence_11():
     with pytest.raises(AssertionError):
         m.transition_to_add()
         m.transition_to_rollback_complete()
-

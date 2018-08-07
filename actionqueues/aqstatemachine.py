@@ -1,11 +1,15 @@
 """Simple state machine to manage restrictions on action queue calls."""
 
-AQStateMachine_INIT = 0
-AQStateMachine_ADD = 1
-AQStateMachine_EXECUTE = 2
-AQStateMachine_ROLLBACK = 3
-AQStateMachine_EXECUTE_COMPLETE = 4
-AQStateMachine_ROLLBACK_COMPLETE = 5
+from enum import Enum
+
+class AQStateMachineStates(Enum):
+    """States for state machine."""
+    init = 0
+    add = 1
+    execute = 2
+    rollback = 3
+    execute_complete = 4
+    rollback_complate = 5
 
 class AQStateMachine(object):
     """This class encodes the transitions that ActionQueues are allowed to do,
@@ -35,24 +39,29 @@ class AQStateMachine(object):
     """
 
     def __init__(self):
-        self.state = AQStateMachine_INIT
+        self.state = AQStateMachineStates.init
 
     def transition_to_add(self):
-        assert self.state in [AQStateMachine_INIT, AQStateMachine_ADD]
-        self.state = AQStateMachine_ADD
+        """Transition to add"""
+        assert self.state in [AQStateMachineStates.init, AQStateMachineStates.add]
+        self.state = AQStateMachineStates.add
 
     def transition_to_execute(self):
-        assert self.state in [AQStateMachine_ADD]
-        self.state = AQStateMachine_EXECUTE
+        """Transition to execute"""
+        assert self.state in [AQStateMachineStates.add]
+        self.state = AQStateMachineStates.execute
 
     def transition_to_rollback(self):
-        assert self.state in [AQStateMachine_EXECUTE, AQStateMachine_EXECUTE_COMPLETE]
-        self.state = AQStateMachine_ROLLBACK
+        """Transition to rollback"""
+        assert self.state in [AQStateMachineStates.execute, AQStateMachineStates.execute_complete]
+        self.state = AQStateMachineStates.rollback
 
     def transition_to_execute_complete(self):
-        assert self.state in [AQStateMachine_EXECUTE]
-        self.state = AQStateMachine_EXECUTE_COMPLETE
+        """Transition to execute complate"""
+        assert self.state in [AQStateMachineStates.execute]
+        self.state = AQStateMachineStates.execute_complete
 
     def transition_to_rollback_complete(self):
-        assert self.state in [AQStateMachine_ROLLBACK]
-        self.state = AQStateMachine_ROLLBACK_COMPLETE
+        """Transition to rollback complete"""
+        assert self.state in [AQStateMachineStates.rollback]
+        self.state = AQStateMachineStates.rollback_complate

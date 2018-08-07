@@ -1,3 +1,5 @@
+# pylint: disable=invalid-name,missing-docstring
+
 import pytest
 
 from actionqueues.exceptionfactory import DoublingBackoffExceptionFactory

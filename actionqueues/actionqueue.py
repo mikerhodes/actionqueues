@@ -1,3 +1,5 @@
+"""Main action queue class and exceptions."""
+
 import time
 
 from actionqueues.aqstatemachine import AQStateMachine
@@ -6,6 +8,7 @@ class ActionRetryException(Exception):
     """Exception thrown by actions when they should be retried."""
     def __init__(self, ms_backoff=0):
         """Initialise with a backoff time."""
+        super(ActionRetryException, self).__init__()
         self.ms_backoff = ms_backoff
 
 class ActionQueue(object):
@@ -17,6 +20,7 @@ class ActionQueue(object):
         self._state_machine = AQStateMachine()
 
     def add(self, action):
+        """Add an action to the execution queue."""
         self._state_machine.transition_to_add()
         self._actions.append(action)
 
@@ -32,11 +36,12 @@ class ActionQueue(object):
         self._state_machine.transition_to_execute_complete()
 
     def rollback(self):
+        """Call rollback on executed actions."""
         self._state_machine.transition_to_rollback()
         for action in reversed(self._executed_actions):
             try:
                 self.execute_with_retries(action, lambda a: a.rollback())
-            except:
+            except:  # pylint: disable=bare-except
                 pass  # on exception, carry on with rollback of other steps
         self._state_machine.transition_to_rollback_complete()
 
@@ -54,5 +59,3 @@ class ActionQueue(object):
             except ActionRetryException as ex:  # other exceptions should bubble out
                 retry = True
                 time.sleep(ex.ms_backoff / 1000.0)
-
-

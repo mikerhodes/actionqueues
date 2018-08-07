@@ -16,6 +16,8 @@ class MockCommand(action.Action):
         self._execute_state = execute_state
         self._rollback_called = False
         self._rollback_state = rollback_state
+        self._execute_value = self._execute_state.peek()
+        self._rollback_value = self._rollback_state.peek()
 
     def execute(self):
         self._execute_called = True
@@ -26,6 +28,7 @@ class MockCommand(action.Action):
         self._rollback_value = self._rollback_state.inc()
 
 class ExplodingCommand(action.Action):
+    """Mock command that raises an error in execute."""
 
     def __init__(self):
         self._execute_called = False
@@ -48,6 +51,7 @@ class RetryCommand(action.Action):
         self._execute_called = False
         self._execute_state = execute_state
         self._delay_ms = delay_ms
+        self._execute_value = self._execute_state.peek()
 
     def execute(self):
         self._execute_called = True
@@ -58,7 +62,7 @@ class RetryCommand(action.Action):
 
 
 
-class RetryOnRollbackCommand(action.Action):
+class RetryOnRollbackCommand(action.Action):  # pylint: disable=too-many-instance-attributes
     """Command that fails with retry exception a certain number of times,
     then succeeds.
     """
@@ -70,6 +74,8 @@ class RetryOnRollbackCommand(action.Action):
         self._execute_state = execute_state
         self._rollback_called = False
         self._rollback_state = rollback_state
+        self._execute_value = self._execute_state.peek()
+        self._rollback_value = self._rollback_state.peek()
 
     def execute(self):
         self._execute_called = True
@@ -93,6 +99,7 @@ class RetryThenExplodeCommand(action.Action):
         self._execute_state = execute_state
         self._delay_ms = delay_ms
         self._rollback_called = False
+        self._execute_value = self._execute_state.peek()
 
     def execute(self):
         self._execute_called = True
@@ -116,6 +123,11 @@ class State(object):
     def __init__(self):
         self._counter = 0
 
+    def peek(self):
+        """Peek at the current counter value."""
+        return self._counter
+
     def inc(self):
+        """Increment counter value and return the new value."""
         self._counter += 1
         return self._counter

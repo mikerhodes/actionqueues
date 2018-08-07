@@ -1,9 +1,18 @@
+# pylint: disable=invalid-name,missing-docstring,protected-access
+
 from datetime import datetime
 
 import pytest
 
 from actionqueues import actionqueue
-from .mock_actions import *
+from .mock_actions import (
+    MockCommand,
+    ExplodingCommand,
+    RetryCommand,
+    RetryOnRollbackCommand,
+    RetryThenExplodeCommand,
+    State
+)
 
 def test_retry_succeed_execute():
     exec_state = State()
@@ -44,7 +53,7 @@ def test_retry_explode_execute():
 
     try:
         q.execute()
-    except:
+    except:  # pylint: disable=bare-except
         pass  # expected from RetryThenExplodeCommand
 
     assert actions[0]._execute_called
@@ -133,7 +142,7 @@ def test_retry_succeed_rollback():
 
     # Ensure executes have been run, and in correct order, no retries here
     q.execute()
-    for idx,action in enumerate(actions):
+    for idx, action in enumerate(actions):
         assert action._execute_called
         assert action._execute_value == idx+1
 

@@ -1,5 +1,11 @@
+# pylint: disable=invalid-name,missing-docstring,protected-access
+
 from actionqueues import actionqueue
-from .mock_actions import *
+from .mock_actions import (
+    MockCommand,
+    ExplodingCommand,
+    State
+)
 
 def test_execute_actions():
     exec_state = State()
@@ -14,7 +20,7 @@ def test_execute_actions():
     q.execute()
 
     # Ensure executes have been run, and in correct order
-    for idx,action in enumerate(actions):
+    for idx, action in enumerate(actions):
         assert action._execute_called
         assert action._execute_value == idx+1
 
@@ -32,7 +38,7 @@ def test_rollback_actions():
     q.rollback()
 
     # Ensure rollbacks have been run, and in correct order
-    for idx,action in enumerate(reversed(actions)):
+    for idx, action in enumerate(reversed(actions)):
         assert action._rollback_called
         assert action._rollback_value == idx+1
 
@@ -51,7 +57,7 @@ def test_explode_action():
 
     try:
         q.execute()
-    except:
+    except:  # pylint: disable=bare-except
         pass  # expected due to ExplodingCommand
 
     assert actions[0]._execute_called
@@ -67,6 +73,3 @@ def test_explode_action():
     assert actions[1]._rollback_value == 1
     assert actions[2]._rollback_called
     assert not actions[3]._rollback_called
-
-
-

@@ -1,3 +1,6 @@
+"""A set of factories for making retry exceptions with varying backoff
+strategies.
+"""
 
 from actionqueues.actionqueue import ActionRetryException
 

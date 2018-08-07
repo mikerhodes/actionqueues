@@ -1,5 +1,7 @@
+"""Base class for actions."""
 
 class Action(object):
+    """Base class for actions."""
 
     def execute(self):
         """Execute this action.
