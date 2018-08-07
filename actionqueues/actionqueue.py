@@ -1,6 +1,6 @@
 import time
 
-from aqstatemachine import AQStateMachine
+from actionqueues.aqstatemachine import AQStateMachine
 
 class ActionRetryException(Exception):
     """Exception thrown by actions when they should be retried."""
